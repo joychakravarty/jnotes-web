@@ -5,22 +5,31 @@ import com.jc.jnotesweb.model.Notes;
 
 public interface NotesService {
     
-    boolean setupUser(String userId, String encryptedValidationText);
+    public static final String VALIDATION_TEXT = "CheckSecret123";
     
-    Notes getAllUserNotes(String userId);
+    /**
+     * 
+     * @param userId
+     * @param encryptedValidationText
+     * @return 0 for success<br>1 for userId already exists<br>2 for failure
+     *       
+     */
+    int setupUser(String userId, String encryptionKey);
     
-    Notes getUserNotesForNotebook(String userId, String notebook);
+    String getEncryptedValidationText(String userId);
+    
+    Notes getAllUserNotes(String userId, String encryptionKey);
+    
+    Notes getUserNotesForNotebook(String userId, String encryptionKey, String notebook);
 
-    void addNoteEntry(String userId, NoteEntry noteEntry);
+    void addNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry);
 
-    void editNoteEntry(String userId, NoteEntry noteEntry);
+    void editNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry);
 
     void deleteNotes(String userId, Notes notes);
 
-    boolean saveNotes(String userId, Notes notes);
+    void saveNotes(String userId, String encryptionKey, Notes notes);
     
     void deleteNotebook(String userId, String notebookToBeDeleted);
-
-    String getEncryptedValidationText(String userId);
 
 }

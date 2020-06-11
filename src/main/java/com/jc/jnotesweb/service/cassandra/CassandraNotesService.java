@@ -48,6 +48,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.jc.jnotesweb.model.NoteEntry;
 import com.jc.jnotesweb.model.Notes;
 import com.jc.jnotesweb.service.NotesService;
+import com.jc.jnotesweb.util.EncryptionUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,9 +71,6 @@ public class CassandraNotesService implements NotesService {
     @Autowired 
     private CqlSession session;
 
-    //@Autowired
-    //private CassandraSessionManager sessionManager;
-
     private static final String GET_ALL_NOTES_FOR_NOTEBOOK = "SELECT * FROM %s.%s WHERE notebook = ?";
     private static final String GET_ALL_NOTES_FOR_USER = "SELECT * FROM %s.%s";
     private static final String ADD_NOTE_ENTRY = "INSERT INTO %s.%s (notebook, noteid, key, value, info, isPassword, lastModifiedTime) VALUES (?,?,?,?,?,?,?)";
@@ -85,23 +83,19 @@ public class CassandraNotesService implements NotesService {
     private static final String GET_ENCRYPTED_VALIDATION_TEXT = "SELECT encrypted_validation_text FROM %s.%s WHERE notebook = ?";
 
     public static final String VALIDATION_NOTEBOOK = "VALIDATION_NOTEBOOK";
-    public static final String VALIDATION_TEXT = "CheckSecret123";
 
     /**
-     * 1. Create userId table which will store the notes for this user. - a user's userId also acts as his password, without
-     * knowing the userId no one can access/modify its content.<br>
-     * 2. Store the secret-validation-text in an encrypted form - this is to ensure that user doesn't accidentally connect
-     * using a wrong secret. Note: secret itself is not stored!<br>
-     * 3. Create prepared statement for Add Note Entry. (TODO: create prepared statement for Edit and Delete as well)<br>
+     * 1. Create userId table which will store the notes for this user.<br>
+     * 2. Store the secret-validation-text in an encrypted form - this is to validate the user later. Note: secret itself is not stored (so user data is protected)!<br>
      * 
      * What can go wrong?<br>
      * if Step 1 fails -> no worries, user will not be connected, no table is created, so they can retry as new user<br>
-     * if Step 2 fails -> table will be created but the validation row will not be present -> fixes itself in
-     * validateUserSecret<br>
+     * if Step 2 fails -> table will be created but the validation row will not be present -> rollback by dropping the table from step 1<br>
      * 
      */
     @Override
-    public boolean setupUser(String userId, String encryptedValidationText) {
+    public int setupUser(String userId, String encryptionKey) {
+        String progress = null;
         try {
             CreateTable createUserTable = createTable(keyspace, userId).withPartitionKey("notebook", DataTypes.TEXT)
                     .withClusteringColumn("noteid", DataTypes.TEXT).withColumn("key", DataTypes.TEXT).withColumn("value", DataTypes.TEXT)
@@ -110,23 +104,24 @@ public class CassandraNotesService implements NotesService {
 
             session.execute(createUserTable.build());
             log.info("Cassandra: User table created");
-
-            insertValidationText(userId, encryptedValidationText);
-
+            progress = "TableCreated";
+            insertValidationText(userId,  EncryptionUtil.encrypt(encryptionKey, VALIDATION_TEXT));
+            progress = "Completed";
         } catch (AlreadyExistsException alreadyExistsException) {
-            log.error(userId + " already exists");
-            return false;
+            log.error(String.format("%s already exists", userId));
+            return 1; 
         } catch (Exception ex) {
-            ex.printStackTrace();
-            log.error("User should to recreate new user!");
-            return false;
+            log.error(String.format("Failed to setup new user: %s.", userId), ex);
+            if("TableCreated".equals(progress)) {
+                session.execute(SimpleStatement.builder(String.format("DROP TABLE IF EXISTS %s.%s", keyspace, userId)).build());
+            }
+            return 2;
         }
-        return true;
+        return 0;
     }
 
     private void insertValidationText(String userId, String encryptedValidationText) {
-        session
-                .execute(SimpleStatement.builder(String.format(ADD_USERSCRET_VALIDATION_ROW, keyspace, userId))
+        session.execute(SimpleStatement.builder(String.format(ADD_USERSCRET_VALIDATION_ROW, keyspace, userId))
                         .addPositionalValues(VALIDATION_NOTEBOOK, encryptedValidationText).build());
         log.info("Cassandra: Validation Text added to User table");
     }
@@ -146,23 +141,23 @@ public class CassandraNotesService implements NotesService {
         }
     }
 
-    private NoteEntry toNoteEntry(Row row) {
-        NoteEntry noteEntry = new NoteEntry(row.getString("notebook"), row.getString("noteid"), row.getString("key"),
-                row.getString("value"), row.getString("info"), row.getBoolean("isPassword"),
+    private NoteEntry toNoteEntry(Row row, String encryptionKey) {
+        NoteEntry noteEntry = new NoteEntry(row.getString("notebook"), row.getString("noteid"),  EncryptionUtil.decrypt(encryptionKey, row.getString("key")),
+                EncryptionUtil.decrypt(encryptionKey, row.getString("value")), EncryptionUtil.decrypt(encryptionKey, row.getString("info")), row.getBoolean("isPassword"),
                 LocalDateTime.ofInstant(row.getInstant("lastModifiedTime"), ZoneOffset.UTC));
         return noteEntry;
     }
 
-    private BoundStatement getBoundStatementForAddNoteEntry(String userId, NoteEntry noteEntry) {
+    private BoundStatement getBoundStatementForAddNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry) {
         String addNoteEntryCQL = String.format(ADD_NOTE_ENTRY, keyspace, userId);
         PreparedStatement preparedAddNoteEntry = session.prepare(addNoteEntryCQL);
 
-        return preparedAddNoteEntry.bind(noteEntry.getNotebook(), noteEntry.getId(), noteEntry.getKey(), noteEntry.getValue(),
-                noteEntry.getInfo(), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC));
+        return preparedAddNoteEntry.bind(noteEntry.getNotebook(), noteEntry.getNoteId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
+                EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC));
     }
 
     @Override
-    public Notes getAllUserNotes(String userId) {
+    public Notes getAllUserNotes(String userId, String encryptionKey) {
         List<NoteEntry> noteEntries;
         String cqlStr = String.format(GET_ALL_NOTES_FOR_USER, keyspace, userId);
         ResultSet results;
@@ -174,7 +169,7 @@ public class CassandraNotesService implements NotesService {
         }
         List<Row> rows = results.all();
         if (rows != null && !rows.isEmpty()) {
-            noteEntries = rows.stream().filter(row -> isValidationNotebook(row)).map(row -> toNoteEntry(row)).collect(Collectors.toList());
+            noteEntries = rows.stream().filter(row -> isValidationNotebook(row)).map(row -> toNoteEntry(row, encryptionKey)).collect(Collectors.toList());
         } else {
             noteEntries = Collections.emptyList();
         }
@@ -182,7 +177,7 @@ public class CassandraNotesService implements NotesService {
     }
 
     @Override
-    public Notes getUserNotesForNotebook(String userId, String notebook) {
+    public Notes getUserNotesForNotebook(String userId, String encryptionKey, String notebook) {
         List<NoteEntry> noteEntries;
         String cqlStr = String.format(GET_ALL_NOTES_FOR_NOTEBOOK, keyspace, userId);
         ResultSet results;
@@ -194,7 +189,7 @@ public class CassandraNotesService implements NotesService {
         }
         List<Row> rows = results.all();
         if (rows != null && !rows.isEmpty()) {
-            noteEntries = rows.stream().filter(row -> isValidationNotebook(row)).map(row -> toNoteEntry(row)).collect(Collectors.toList());
+            noteEntries = rows.stream().filter(row -> isValidationNotebook(row)).map(row -> toNoteEntry(row, encryptionKey)).collect(Collectors.toList());
         } else {
             noteEntries = Collections.emptyList();
         }
@@ -202,25 +197,25 @@ public class CassandraNotesService implements NotesService {
     }
 
     @Override
-    public void addNoteEntry(String userId, NoteEntry noteEntry) {
-        String cqlStr = String.format(ADD_NOTE_ENTRY, userId);
+    public void addNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry) {
+        String cqlStr = String.format(ADD_NOTE_ENTRY, keyspace, userId);
 
         session
                 .execute(SimpleStatement.builder(cqlStr)
-                        .addPositionalValues(noteEntry.getNotebook(), noteEntry.getId(), noteEntry.getKey(), noteEntry.getValue(),
-                                noteEntry.getInfo(), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC))
+                        .addPositionalValues(noteEntry.getNotebook(), noteEntry.getNoteId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
+                                EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC))
                         .build());
 
     }
 
     @Override
-    public void editNoteEntry(String userId, NoteEntry noteEntry) {
+    public void editNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry) {
         String cqlStr = String.format(EDIT_NOTE_ENTRY, keyspace, userId);
 
         session
                 .execute(SimpleStatement.builder(cqlStr)
-                        .addPositionalValues(noteEntry.getKey(), noteEntry.getValue(), noteEntry.getInfo(), noteEntry.isPassword(),
-                                noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getId())
+                        .addPositionalValues(EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(),
+                                noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getNoteId())
                         .build());
 
     }
@@ -228,19 +223,18 @@ public class CassandraNotesService implements NotesService {
     @Override
     public void deleteNotes(String userId, Notes notes) {
         String notebook = notes.getNoteEntries().get(0).getNotebook();
-        List<String> noteIds = notes.getNoteEntries().stream().map((noteEntry) -> noteEntry.getId()).collect(Collectors.toList());
+        List<String> noteIds = notes.getNoteEntries().stream().map((noteEntry) -> noteEntry.getNoteId()).collect(Collectors.toList());
         String cqlStr = String.format(DELETE_NOTE_ENTRIES, keyspace, userId);
         session.execute(SimpleStatement.builder(cqlStr).addPositionalValues(notebook, noteIds).build());
     }
 
     @Override
-    public boolean saveNotes(String userId, Notes notes) {
+    public void saveNotes(String userId, String encryptionKey, Notes notes) {
         Iterable<BatchableStatement<?>> statements = notes.getNoteEntries().stream()
-                .map((noteEntry) -> getBoundStatementForAddNoteEntry(userId, noteEntry)).collect(Collectors.toList());
+                .map((noteEntry) -> getBoundStatementForAddNoteEntry(userId, encryptionKey, noteEntry)).collect(Collectors.toList());
         BatchStatement batch = new BatchStatementBuilder(BatchType.LOGGED).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
                 .addStatements(statements).build();
         session.execute(batch);
-        return true;
     }
 
     @Override
@@ -259,7 +253,6 @@ public class CassandraNotesService implements NotesService {
             Row row = results.one();
             encryptedValidationText = row.getString("encrypted_validation_text");
         } catch (Exception ex) {
-            ex.printStackTrace();
             log.error("Exception in getEncryptedValidationText (can't do much here) : ", ex);
             return null;
         }

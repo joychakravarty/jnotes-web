@@ -62,10 +62,10 @@ public final class EncryptionUtil {
     }
 
     public static void main(String[] args) {
-        String encryptedVal = locallyEncrypt("Client1234!");
+        String encryptedVal = locallyEncrypt("Testing");
         System.out.println("encryptedVal " + encryptedVal);
 
-        String decryptedVal = locallyDecrypt("7b7d0b9959e05058dc4c9845a3acc400");
+        String decryptedVal = locallyDecrypt("6ad8866fb76c2b1285a1393ae5f44582879cd23f397afb0b69f78b788c3638ad");
         System.out.println("decryptedVal " + decryptedVal);
     }
 
