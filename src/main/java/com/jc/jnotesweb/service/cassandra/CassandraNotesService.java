@@ -152,7 +152,7 @@ public class CassandraNotesService implements NotesService {
         String addNoteEntryCQL = String.format(ADD_NOTE_ENTRY, keyspace, userId);
         PreparedStatement preparedAddNoteEntry = session.prepare(addNoteEntryCQL);
 
-        return preparedAddNoteEntry.bind(noteEntry.getNotebook(), noteEntry.getNoteId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
+        return preparedAddNoteEntry.bind(noteEntry.getNotebook(), noteEntry.getId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
                 EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC));
     }
 
@@ -202,7 +202,7 @@ public class CassandraNotesService implements NotesService {
 
         session
                 .execute(SimpleStatement.builder(cqlStr)
-                        .addPositionalValues(noteEntry.getNotebook(), noteEntry.getNoteId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
+                        .addPositionalValues(noteEntry.getNotebook(), noteEntry.getId(), EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
                                 EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC))
                         .build());
 
@@ -215,7 +215,7 @@ public class CassandraNotesService implements NotesService {
         session
                 .execute(SimpleStatement.builder(cqlStr)
                         .addPositionalValues(EncryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getValue()), EncryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(),
-                                noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getNoteId())
+                                noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getId())
                         .build());
 
     }
@@ -223,7 +223,7 @@ public class CassandraNotesService implements NotesService {
     @Override
     public void deleteNotes(String userId, Notes notes) {
         String notebook = notes.getNoteEntries().get(0).getNotebook();
-        List<String> noteIds = notes.getNoteEntries().stream().map((noteEntry) -> noteEntry.getNoteId()).collect(Collectors.toList());
+        List<String> noteIds = notes.getNoteEntries().stream().map((noteEntry) -> noteEntry.getId()).collect(Collectors.toList());
         String cqlStr = String.format(DELETE_NOTE_ENTRIES, keyspace, userId);
         session.execute(SimpleStatement.builder(cqlStr).addPositionalValues(notebook, noteIds).build());
     }

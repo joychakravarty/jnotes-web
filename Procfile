@@ -1,1 +1,1 @@
-web: java -jar target/jnotes-web-1.0.jar
+web: java -jar target/jnotes-web.jar

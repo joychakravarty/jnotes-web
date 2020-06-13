@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -135,6 +137,31 @@ class JNotesWebApplicationTests {
         assertEquals("kkk222", result.getBody().getNoteEntries().get(0).getKey());
         assertEquals("vvv222", result.getBody().getNoteEntries().get(0).getValue());
         assertEquals("iii222", result.getBody().getNoteEntries().get(0).getInfo());
+    }
+    
+    @Test
+    @Order(9)
+    public void testBackupNotes() {
+        String testNotebook1 = "nbX";
+        NoteEntry noteEntry1 = new NoteEntry(testNotebook1, "testid1", "kkk222", "vvv222", "iii222", true, LocalDateTime.now());
+        NoteEntry noteEntry2 = new NoteEntry(testNotebook1, "testid2", "kkk222", "vvv222", "iii222", true, LocalDateTime.now());
+        List<NoteEntry> list = new ArrayList<>();
+        list.add(noteEntry1);
+        list.add(noteEntry2);
+        Notes notes = new Notes(list);
+        ResponseEntity<String> result = restTemplate.exchange
+                ("http://localhost:" + port + "/backupNotes", HttpMethod.POST, new HttpEntity<>(notes, createHeaders()), String.class);
+        assertEquals(HttpStatus.ACCEPTED, result.getStatusCode());
+    }
+    
+    @Test
+    @Order(10)
+    public void testGetAllUserNotes() { 
+        ResponseEntity<Notes> result = restTemplate.exchange
+                ("http://localhost:" + port + "/getUserNotes", HttpMethod.GET, new HttpEntity<T>(createHeaders()), Notes.class);
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(3, result.getBody().getNoteEntries().size());
+        
     }
 
 
