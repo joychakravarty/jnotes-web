@@ -8,26 +8,29 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
+@ToString(onlyExplicitlyIncluded = true)
 public final class NoteEntry {
     
     public NoteEntry() {
     }
 
-    public NoteEntry(String notebook, String noteId, String key, String value, String info, boolean isPassword,
+    public NoteEntry(String notebook, String id, String key, String value, String info, boolean isPassword,
             LocalDateTime lastModifiedTime) {
         super();
         this.notebook = notebook;
-        this.noteId = noteId;
+        this.id = id;
         this.key = key;
         this.value = value;
         this.info = info;
         this.isPassword = isPassword;
         this.lastModifiedTime = lastModifiedTime;
     }
-
+    
+    @ToString.Include
     private String notebook;
-    private String noteId;
+    @ToString.Include
+    private String id;
+    @ToString.Include
     private String key;
     private String value;
     private String info;

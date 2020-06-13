@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 import com.jc.jnotesweb.service.NotesService;
 import com.jc.jnotesweb.util.EncryptionUtil;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class Authenticator {
 
@@ -46,6 +49,7 @@ public class Authenticator {
                 return AuthResponse.INVALID_USER_AUTH_RESPONSE;
             } else {
                 if (NotesService.VALIDATION_TEXT.equals(EncryptionUtil.decrypt(userSecret, encryptedValidationText))) {
+                    log.info("User Authentication successful | userId:"+userId);
                     return new AuthResponse(userId, userSecret);
                 } else {
                     return AuthResponse.INVALID_SECRET_AUTH_RESPONSE;
