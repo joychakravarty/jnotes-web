@@ -3,6 +3,7 @@ package com.jc.jnotesweb;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +47,8 @@ class JNotesWebApplicationTests {
     @Autowired
     private TestRestTemplate restTemplate;
     
-    private static final String TEST_USER_ID = "jnotes_testuser";
-    private static final String TEST_USER_SECRET = "jnotes_testsecret";
+    private static final String TEST_USER_ID = "jnotes_testuser_1";
+    private static final String TEST_USER_SECRET = "jnotes_testsecret_1";
     
     @Autowired
     private CqlSession session;
@@ -61,7 +62,7 @@ class JNotesWebApplicationTests {
             System.out.println("Test table doest seem to exist");
         }
         if (results != null) {
-            session.execute(SimpleStatement.builder("DROP TABLE IF EXISTS jnotes_testuser").build());
+            session.execute(SimpleStatement.builder("DROP TABLE IF EXISTS jnotes_testuser").setTimeout(Duration.ofMinutes(1)).build());
         }
     }
     

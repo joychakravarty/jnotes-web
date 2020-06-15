@@ -1,18 +1,60 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>JNotes</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JNotes</title>
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<link rel="icon" href="favicon.ico">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </head>
 <body>
+	<nav class="navbar fixed-top navbar-dark navbar-expand bg-dark">
+		<a class="navbar-brand" href="#">JNotes</a>
+		<ul class="nav navbar-nav">
+			<li class="nav-item"><a class="nav-link"
+				href="https://joychakravarty.github.io/JNotes/" target="_blank">About</a></li>
+		</ul>
+	</nav>
 	<div class="container">
-		<h1>My First Bootstrap Page</h1>
-		<p>This is some text.</p>
-		<p th:text="${dbProperties}" />
+		<form class="form-group" id="login-form">
+			<div class="row">
+				<div class="col-sm-5">
+					<input type="text" id="userId" class="form-control"
+						placeholder="UserId">
+				</div>
+				<div class="col-sm-5">
+					<input type="password" id="userSecret" class="form-control"
+						placeholder="Secret">
+				</div>
+				<div class="col-sm-2">
+					<button id="connectBtn" type="submit" class="btn btn-default">
+						<span class="ui-button-text">Connect</span>
+					</button>
+				</div>
+			</div>
+		</form>
+		<div id="feedback" class="col-sm-12"></div>
+		<div class="row" id="notebookDiv">
+			<div class="col-sm-5" id="notebooksDropdown">
+				<select class="form-control" id="notebooks" name="notebooks">
+					<!-- <option th:each="notebook : ${notebooks}" th:value="${notebook}" th:text="${notebook}"></option> -->
+				</select>
+			</div>
+		</div>
+		<br>
+		<div class="row col-sm-12 table-responsive" id="notesTableDiv">
+			<table id="notesTable" class="table table-hover table-dark">
+				<tbody id="notesTbody">
+
+				</tbody>
+			</table>
+		</div>
 	</div>
+	<script type="text/javascript" src="js/ajax_functions.js"></script>
 </body>
 </html>
