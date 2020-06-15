@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +76,7 @@ public class CassandraNotesServiceTest {
             System.out.println("Test table doest seem to exist");
         }
         if (results != null) {
-            session.execute(SimpleStatement.builder("DROP TABLE IF EXISTS jnotes_testuser").build());
+            session.execute(SimpleStatement.builder("DROP TABLE IF EXISTS jnotes_testuser").setTimeout(Duration.ofMinutes(1)).build());
         }
     }
     

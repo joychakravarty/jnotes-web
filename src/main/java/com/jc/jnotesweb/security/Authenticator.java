@@ -48,14 +48,18 @@ public class Authenticator {
             if (encryptedValidationText == null) {
                 return AuthResponse.INVALID_USER_AUTH_RESPONSE;
             } else {
-                if (NotesService.VALIDATION_TEXT.equals(EncryptionUtil.decrypt(userSecret, encryptedValidationText))) {
-                    log.info("User Authentication successful | userId:"+userId);
-                    return new AuthResponse(userId, userSecret);
-                } else {
+                try {
+                    String decryptedValidationText = EncryptionUtil.decrypt(userSecret, encryptedValidationText);
+                    if (NotesService.VALIDATION_TEXT.equals(decryptedValidationText)) {
+                        log.info("User Authentication successful | userId:" + userId);
+                        return new AuthResponse(userId, userSecret);
+                    } else {
+                        return AuthResponse.INVALID_SECRET_AUTH_RESPONSE;
+                    }
+                } catch (Exception ex) {//In case secret is incorrect we get something like BadPaddingException
                     return AuthResponse.INVALID_SECRET_AUTH_RESPONSE;
                 }
             }
-
         }
     }
 
