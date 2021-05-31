@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.3.0.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.jc</groupId>
 	<artifactId>jnotes-web</artifactId>
@@ -21,7 +21,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
     <dependencyManagement>
-        <dependencies>
+			<dependencies>
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
@@ -44,33 +44,82 @@
             <groupId>org.springframework.boot</groupId>  starter require for spring boot spring security
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency> -->
+<!--		<dependency>-->
+<!--		    <groupId>org.projectlombok</groupId>-->
+<!--		    <artifactId>lombok</artifactId>-->
+<!--		    <scope>provided</scope>-->
+<!--			<version>1.18.18</version>-->
+<!--		</dependency>-->
 		<dependency>
-		    <groupId>org.projectlombok</groupId>
-		    <artifactId>lombok</artifactId>
-		    <scope>provided</scope>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-core</artifactId>
+			<version>3.3.0</version>
 		</dependency>
 		<dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-query-builder</artifactId>
-        </dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+		<!-- <dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-handler</artifactId>
+				<version>4.0.47.Final</version>
+		</dependency> -->
+		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-mapping</artifactId>
+			<version>3.1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-extras</artifactId>
+			<version>3.1.4</version>
+		</dependency>
+<!--		<dependency>-->
+<!--            <groupId>com.datastax.oss</groupId>-->
+<!--            <artifactId>java-driver-core</artifactId>-->
+<!--        </dependency>-->
+<!--		<dependency>-->
+<!--            <groupId>com.datastax.oss</groupId>-->
+<!--            <artifactId>java-driver-query-builder</artifactId>-->
+<!--        </dependency>-->
+		<dependency>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-core</artifactId>
+			<version>4.6.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-query-builder</artifactId>
+			<version>4.6.1</version>
+			<scope>compile</scope>
+		</dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
+			<version>5.3.2.RELEASE</version>
         </dependency>
         <dependency>
 		   <groupId>commons-codec</groupId>
 		   <artifactId>commons-codec</artifactId>
+		   <version>1.14</version>
 		</dependency>
-		
+
 		<dependency>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-devtools</artifactId>
           <scope>runtime</scope>
         </dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -97,15 +146,13 @@
 
 	<build>
 	   <finalName>jnotes-web</finalName>
+	   <pluginManagement>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<executions>
 					<execution>
-						<goals>
-							<goal>build-info</goal>
-						</goals>
 						<configuration>
 							<additionalProperties>
 								<encoding.source>${project.build.sourceEncoding}</encoding.source>
@@ -118,6 +165,7 @@
 				</executions>
 			</plugin>
 		</plugins>
+		</pluginManagement>
 	</build>
 
 </project>

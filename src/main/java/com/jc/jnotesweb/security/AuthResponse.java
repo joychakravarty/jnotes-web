@@ -2,14 +2,23 @@ package com.jc.jnotesweb.security;
 
 import javax.annotation.concurrent.Immutable;
 
-import lombok.Getter;
-
-@Getter
 @Immutable
 public class AuthResponse {
 
     private final AuthStatus authStatus;
     private final String userId;
+    public AuthStatus getAuthStatus() {
+        return authStatus;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getEncryptionKey() {
+        return encryptionKey;
+    }
+
     private final String encryptionKey;
 
     public static final AuthResponse INVALID_HEADER_AUTH_RESPONSE = new AuthResponse(AuthStatus.INVALID_HEADER, null, null);

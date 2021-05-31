@@ -21,14 +21,16 @@ import com.jc.jnotesweb.model.NoteEntry;
 import com.jc.jnotesweb.model.NotebookRequest;
 import com.jc.jnotesweb.model.Notes;
 import com.jc.jnotesweb.security.AuthResponse;
+import static com.jc.jnotesweb.security.AuthStatus.*;
 import com.jc.jnotesweb.security.Authenticator;
 import com.jc.jnotesweb.service.NotesService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Controller
 public class NotesAPIController {
+    private static final Logger log = LoggerFactory.getLogger(NotesAPIController.class);
     private static final Notes EMPTY_NOTES = new Notes(Collections.emptyList());
 
     @Autowired

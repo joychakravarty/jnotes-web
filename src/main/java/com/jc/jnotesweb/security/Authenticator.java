@@ -5,18 +5,17 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.jc.jnotesweb.service.NotesService;
 import com.jc.jnotesweb.util.EncryptionUtil;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @Component
 public class Authenticator {
-
+    private static final Logger log = LoggerFactory.getLogger(Authenticator.class);
     private static final String AUTH_TYPE = "JNOTES";
 
     @Autowired
