@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.jc.jnotesweb.service.cassandra.CassandraSessionManager;
+import com.jc.jnotesweb.repository.CassandraSessionManager;
 
 @Configuration
 @Import({ CassandraSessionManager.class })
@@ -26,6 +26,8 @@ public class JNotesWebApplication {
         Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
         return builder.modulesToInstall(new JavaTimeModule());
     }
+
+
 	
 
 }

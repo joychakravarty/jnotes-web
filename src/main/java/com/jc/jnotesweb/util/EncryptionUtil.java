@@ -18,28 +18,47 @@
  */
 package com.jc.jnotesweb.util;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /*
  * This class has encrypt/decrypt methods using Spring security. 
  * 
  */
-public final class EncryptionUtil {
+@Slf4j
+@Component
+public class EncryptionUtil {
     
     public static final String ENCRYPTION_SALT = "5c0744940b5c369b";
-    public static final String LOCAL_ENCRYPTION_KEY = "XxxYyyZzz";  
+    private static final String ENCRYPTION_SECRET = "ENCRYPTION_SECRET";
+    
+    private String encryptionSecret = null;
 
-    public static String locallyEncrypt(String textToEncrypt) {
-        return encrypt(LOCAL_ENCRYPTION_KEY, textToEncrypt);
+    @PostConstruct
+    public void readEncyptionSeret(){
+        this.encryptionSecret = System.getProperty(ENCRYPTION_SECRET);
+        if(this.encryptionSecret == null) {
+            this.encryptionSecret = System.getenv(ENCRYPTION_SECRET);
+            log.info("trying encryptionSecret from env: "+encryptionSecret);
+        }
+        log.info("encryptionSecret : "+encryptionSecret);
     }
 
-    public static String locallyDecrypt(String textToDecrypt) {
-        return decrypt(LOCAL_ENCRYPTION_KEY, textToDecrypt);
+    public String locallyEncrypt(String textToEncrypt) {
+        return encrypt(encryptionSecret, textToEncrypt);
     }
 
-    public static String encrypt(String encryptionKey, String textToEncrypt) {
+    public String locallyDecrypt(String textToDecrypt) {
+        return decrypt(encryptionSecret, textToDecrypt);
+    }
+
+    public String encrypt(String encryptionKey, String textToEncrypt) {
         if (StringUtils.isBlank(textToEncrypt)) {
             return null;
         }
@@ -50,7 +69,7 @@ public final class EncryptionUtil {
         return encryptor.encrypt(textToEncrypt);
     }
 
-    public static String decrypt(String encryptionKey, String textToDecrypt) {
+    public String decrypt(String encryptionKey, String textToDecrypt) {
         if (StringUtils.isBlank(textToDecrypt)) {
             return null;
         }
@@ -62,11 +81,13 @@ public final class EncryptionUtil {
     }
 
     public static void main(String[] args) {
-        String encryptedVal = locallyEncrypt("Testing");
+        EncryptionUtil encryptionUtil = new EncryptionUtil();
+        String encryptedVal = encryptionUtil.locallyEncrypt("Testing");
         System.out.println("encryptedVal " + encryptedVal);
 
-        String decryptedVal = locallyDecrypt("6ad8866fb76c2b1285a1393ae5f44582879cd23f397afb0b69f78b788c3638ad");
+        String decryptedVal = encryptionUtil.locallyDecrypt("6ad8866fb76c2b1285a1393ae5f44582879cd23f397afb0b69f78b788c3638ad");
         System.out.println("decryptedVal " + decryptedVal);
+        
     }
 
 }

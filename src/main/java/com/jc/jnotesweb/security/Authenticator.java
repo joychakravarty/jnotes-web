@@ -22,6 +22,9 @@ public class Authenticator {
     @Autowired
     private NotesService service;
 
+    @Autowired
+    private EncryptionUtil encryptionUtil;
+
     private final ConcurrentMap<String, String> userCache = new ConcurrentHashMap<>();
 
     public AuthResponse evaluateAuthHeader(String authReqHeader) {
@@ -49,7 +52,7 @@ public class Authenticator {
                 return AuthResponse.INVALID_USER_AUTH_RESPONSE;
             } else {
                 try {
-                    String decryptedValidationText = EncryptionUtil.decrypt(userSecret, encryptedValidationText);
+                    String decryptedValidationText = encryptionUtil.decrypt(userSecret, encryptedValidationText);
                     if (NotesService.VALIDATION_TEXT.equals(decryptedValidationText)) {
                         log.info("User Authentication successful | userId:" + userId);
                         return new AuthResponse(userId, userSecret);

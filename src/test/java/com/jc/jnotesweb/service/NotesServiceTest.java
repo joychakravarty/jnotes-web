@@ -16,12 +16,11 @@
  * 
  * 
  */
-package com.jc.jnotesweb.service.cassandra;
+package com.jc.jnotesweb.service;
 
-import static com.jc.jnotesweb.service.cassandra.CassandraNotesService.VALIDATION_NOTEBOOK;
+import static com.jc.jnotesweb.repository.NotesRepository.VALIDATION_NOTEBOOK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -29,7 +28,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeAll;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.jc.jnotesweb.model.NoteEntry;
+import com.jc.jnotesweb.model.Notes;
+import com.jc.jnotesweb.util.EncryptionUtil;
+
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -39,15 +45,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.jc.jnotesweb.model.NoteEntry;
-import com.jc.jnotesweb.model.Notes;
-import com.jc.jnotesweb.service.NotesService;
-import com.jc.jnotesweb.util.EncryptionUtil;
-
 /**
  * 
  * @author Joy C
@@ -56,45 +53,29 @@ import com.jc.jnotesweb.util.EncryptionUtil;
 @SpringBootTest
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class CassandraNotesServiceTest {
+public class NotesServiceTest {
 
     private static final String TEST_USER_ID = "jnotes_testuser";
     private static final String TEST_USER_SECRET = "jnotes_testsecret";
     
     @Autowired
     private NotesService service;
+
+    @Autowired
+    private EncryptionUtil encryptionUtil;
     
     @Autowired
     private CqlSession session;
 
-    @BeforeAll
-    public void beforeAll() {
-        ResultSet results = null;
-        try {
-            results = session.execute(SimpleStatement.builder("SELECT * from " + TEST_USER_ID).build());
-        } catch (Exception ex) {
-            System.out.println("Test table doest seem to exist");
-        }
-        if (results != null) {
-            session.execute(SimpleStatement.builder("DROP TABLE IF EXISTS jnotes_testuser").setTimeout(Duration.ofMinutes(1)).build());
-        }
-    }
-    
     @Test
     @Order(1)
-    public void testGetEncryptedValidationText_UserDoesNotExist() {
-        String encryptedValidtionText = service.getEncryptedValidationText(TEST_USER_ID);
-        assertNull(encryptedValidtionText, "There shouldnt be any encryptedValidtionText");
-    }
-
-    @Test
-    @Order(2)
     public void testSetupUser_NewUser() {
+        session.execute(SimpleStatement.builder(String.format("DROP TABLE IF EXISTS jnotes.%s", TEST_USER_ID)).setTimeout(Duration.ofMinutes(1)).build());
         int returnStatus = service.setupUser(TEST_USER_ID, TEST_USER_SECRET);
 
         assertEquals(0, returnStatus, "Setup new user should have been successful");
 
-        ResultSet results = session.execute(SimpleStatement.builder("SELECT * from " + TEST_USER_ID).build());
+        ResultSet results = session.execute(SimpleStatement.builder("SELECT * from jnotes." + TEST_USER_ID).build());
 
         assertNotNull(results, TEST_USER_ID + " table should have been created");
         Row row = results.one();
@@ -103,22 +84,22 @@ public class CassandraNotesServiceTest {
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     public void testSetupUser_ExistingUser() {
         int returnStatus = service.setupUser(TEST_USER_ID, TEST_USER_SECRET);
         assertEquals(1, returnStatus, "Setup should already be created");
     }
     
     @Test
-    @Order(4)
+    @Order(3)
     public void testGetEncryptedValidationText_UserExists() {
         String encryptedValidtionText = service.getEncryptedValidationText(TEST_USER_ID);
-        String validationText = EncryptionUtil.decrypt(TEST_USER_SECRET, encryptedValidtionText);
-        assertEquals(validationText, NotesService.VALIDATION_TEXT, "ValidationText should match");
+        String validationText = encryptionUtil.decrypt(TEST_USER_SECRET, encryptedValidtionText);
+        assertEquals(NotesService.VALIDATION_TEXT, validationText, "ValidationText should match");
     }
 
     @Test
-    @Order(5)
+    @Order(4)
     public void testAddNoteEntry() throws IOException {
         String testNotebook = "nb1";
         NoteEntry noteEntry = new NoteEntry(testNotebook, "ididid", "kkk", "vvv", "iii", false, LocalDateTime.now());
@@ -131,7 +112,7 @@ public class CassandraNotesServiceTest {
     }
 
     @Test
-    @Order(6)
+    @Order(5)
     public void testEditNoteEntry() throws IOException {
         String testNotebook = "nb1";
         NoteEntry noteEntry = new NoteEntry(testNotebook, "ididid", "kkk222", "vvv222", "iii222", true, LocalDateTime.now());
@@ -147,7 +128,7 @@ public class CassandraNotesServiceTest {
     }
 
     @Test
-    @Order(7)
+    @Order(6)
     public void testSaveNotes() throws IOException {
         String testNotebook1 = "nbX";
         String testNotebook2 = "nbY";
@@ -174,14 +155,14 @@ public class CassandraNotesServiceTest {
     }
 
     @Test
-    @Order(8)
+    @Order(7)
     public void testGetAllUserNotes() throws IOException {
         Notes retNotes = service.getAllUserNotes(TEST_USER_ID, TEST_USER_SECRET);
         assertEquals(4, retNotes.getNoteEntries().size());
     }
     
     @Test
-    @Order(9)
+    @Order(8)
     public void testDeleteNotebook() throws IOException {
         String testNotebook2 = "nbY";
         Notes retNotes = service.getUserNotesForNotebook(TEST_USER_ID, TEST_USER_SECRET, testNotebook2);
@@ -192,7 +173,7 @@ public class CassandraNotesServiceTest {
     }
     
     @Test
-    @Order(10)
+    @Order(9)
     public void testDeleteNotes() throws IOException {
         String testNotebook1 = "nbX";
         Notes retNotes = service.getUserNotesForNotebook(TEST_USER_ID, TEST_USER_SECRET, testNotebook1);
