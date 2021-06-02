@@ -1,1 +1,1 @@
-web: java -jar target/jnotes-web.jar
+web: java -jar target/jnotes-web.jar -Ddatastax-java-driver.basic.request.timeout="15 seconds"
