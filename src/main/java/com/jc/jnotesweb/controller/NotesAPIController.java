@@ -156,6 +156,10 @@ public class NotesAPIController {
 
     @PostMapping("/backupNotes")
     public ResponseEntity<String> backupNotes(@RequestHeader("authorization") String authReqHeader, @RequestBody Notes notes) {
+        if(notes.getNoteEntries() == null || notes.getNoteEntries().isEmpty()){
+            log.info("backupNotes | skipping backup as there are no notes in this notebook");
+            return new ResponseEntity<String>(StringUtils.EMPTY, HttpStatus.ACCEPTED);
+        }
         log.info("backupNotes | number of notes: " + notes.getNoteEntries().size());
         AuthResponse authResponse = authenticator.evaluateAuthHeader(authReqHeader);
         String userId = authResponse.getUserId();
