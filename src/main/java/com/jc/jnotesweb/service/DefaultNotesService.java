@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -73,9 +74,12 @@ public class DefaultNotesService implements NotesService {
         String progress = null;
         try {
             repository.createUserTable(userId);
+            log.info("Created user table " + userId);
+            TimeUnit.SECONDS.sleep(3);
             progress = "TableCreated";
             repository.insertValidationTextForUser(userId, encryptionUtil.encrypt(encryptionKey, VALIDATION_TEXT));
             progress = "Completed";
+            log.info("inserted validation text");
         } catch (AlreadyExistsException alreadyExistsException) {
             log.error(String.format("%s already exists", userId));
             return 1;
@@ -167,12 +171,11 @@ public class DefaultNotesService implements NotesService {
 
     @Override
     public String getEncryptedValidationText(String userId) {
-        String encryptedValidationText = null;
+        String encryptedValidationText = "";
         try {
             encryptedValidationText = repository.getValidationTextForUser(userId);
         } catch (Exception ex) {
             log.error("Exception in getEncryptedValidationText (can't do much here) : ", ex);
-            return null;
         }
         return encryptedValidationText;
     }

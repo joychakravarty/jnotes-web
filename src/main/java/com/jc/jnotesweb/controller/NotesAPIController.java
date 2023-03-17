@@ -43,7 +43,7 @@ public class NotesAPIController {
 
     @RequestMapping("/")
     String index(Map<String, Object> model) {
-        System.out.println("dbProperties >> " + dbProperties);
+        log.info("dbProperties >> " + dbProperties);
         model.put("dbProperties", dbProperties);
         return "index";
     }

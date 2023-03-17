@@ -1,14 +1,25 @@
 package com.jc.jnotesweb.repository;
 
-import java.util.List;
-
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.jc.jnotesweb.model.NoteEntry;
 import com.jc.jnotesweb.model.Notes;
 
+import java.util.List;
+
 public interface NotesRepository {
 
-    public static final String VALIDATION_NOTEBOOK = "VALIDATION_NOTEBOOK";
+    String VALIDATION_NOTEBOOK = "VALIDATION_NOTEBOOK";
+
+    String COLUMN_NOTEBOOK = "notebook";
+    String COLUMN_KEY = "key";
+    String COLUMN_VALUE = "value";
+    String COLUMN_INFO = "info";
+    String COLUMN_IS_PASSWORD = "isPassword";
+    String COLUMN_LAST_MODIFIED_TIME = "lastModifiedTime";
+    String COLUMN_ENC_VALIDATION_TXT = "encrypted_validation_text";
+    String COLUMN_NOTEID = "noteid";
+
+    String EXECUTION_PROFILE_NAME = "jnotes";
 
     void createUserTable(String userId);
 

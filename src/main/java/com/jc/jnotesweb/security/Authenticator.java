@@ -48,7 +48,7 @@ public class Authenticator {
             String userSecret = credArr[1];
             userCache.computeIfAbsent(userId, (k) -> service.getEncryptedValidationText(k));
             String encryptedValidationText = userCache.get(userId);
-            if (encryptedValidationText == null) {
+            if (StringUtils.isBlank(encryptedValidationText)) {
                 return AuthResponse.INVALID_USER_AUTH_RESPONSE;
             } else {
                 try {

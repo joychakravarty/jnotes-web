@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -36,6 +37,7 @@ import com.jc.jnotesweb.model.NoteEntry;
 import com.jc.jnotesweb.model.Notes;
 import com.jc.jnotesweb.util.EncryptionUtil;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
+@Slf4j
 public class NotesServiceTest {
 
     private static final String TEST_USER_ID = "jnotes_testuser";
@@ -69,10 +72,13 @@ public class NotesServiceTest {
 
     @Test
     @Order(1)
-    public void testSetupUser_NewUser() {
+    public void testSetupUser_NewUser() throws InterruptedException {
+        log.info("testSetupUser_NewUser");
         session.execute(SimpleStatement.builder(String.format("DROP TABLE IF EXISTS jnotes.%s", TEST_USER_ID)).setTimeout(Duration.ofMinutes(1)).build());
+        log.info("Dropped table");
+        TimeUnit.SECONDS.sleep(5);
         int returnStatus = service.setupUser(TEST_USER_ID, TEST_USER_SECRET);
-
+        TimeUnit.SECONDS.sleep(5);
         assertEquals(0, returnStatus, "Setup new user should have been successful");
 
         ResultSet results = session.execute(SimpleStatement.builder("SELECT * from jnotes." + TEST_USER_ID).build());
@@ -87,7 +93,7 @@ public class NotesServiceTest {
     @Order(2)
     public void testSetupUser_ExistingUser() {
         int returnStatus = service.setupUser(TEST_USER_ID, TEST_USER_SECRET);
-        assertEquals(1, returnStatus, "Setup should already be created");
+        assertEquals(1, returnStatus, "User should have been already created");
     }
     
     @Test

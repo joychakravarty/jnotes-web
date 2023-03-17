@@ -1,35 +1,29 @@
 package com.jc.jnotesweb.repository;
 
-import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
-
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.jc.jnotesweb.model.NoteEntry;
 import com.jc.jnotesweb.model.Notes;
 import com.jc.jnotesweb.util.EncryptionUtil;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
 
 
 @Slf4j
 @Repository
 public class CassandraNotesRepository implements NotesRepository {
-    
+
     private static final String GET_ALL_NOTES_FOR_NOTEBOOK = "SELECT * FROM %s.%s WHERE notebook = ?";
     private static final String GET_ALL_NOTES_FOR_USER = "SELECT * FROM %s.%s";
     private static final String ADD_NOTE_ENTRY = "INSERT INTO %s.%s (notebook, noteid, key, value, info, isPassword, lastModifiedTime) VALUES (?,?,?,?,?,?,?)";
@@ -47,40 +41,40 @@ public class CassandraNotesRepository implements NotesRepository {
     @Autowired
     @Qualifier("keyspace")
     private String keyspace;
-    
-    @Autowired 
+
+    @Autowired
     private CqlSession session;
 
     @Override
     public void createUserTable(String userId) {
-        CreateTable createUserTable = createTable(keyspace, userId).withPartitionKey("notebook", DataTypes.TEXT)
-                    .withClusteringColumn("noteid", DataTypes.TEXT).withColumn("key", DataTypes.TEXT).withColumn("value", DataTypes.TEXT)
-                    .withColumn("info", DataTypes.TEXT).withColumn("isPassword", DataTypes.BOOLEAN)
-                    .withColumn("lastModifiedTime", DataTypes.TIMESTAMP).withStaticColumn("encrypted_validation_text", DataTypes.TEXT);
-        session.execute(createUserTable.build());
+        CreateTable createUserTable = createTable(keyspace, userId).withPartitionKey(COLUMN_NOTEBOOK, DataTypes.TEXT)
+                .withClusteringColumn(COLUMN_NOTEID, DataTypes.TEXT).withColumn(COLUMN_KEY, DataTypes.TEXT).withColumn(COLUMN_VALUE, DataTypes.TEXT)
+                .withColumn(COLUMN_INFO, DataTypes.TEXT).withColumn(COLUMN_IS_PASSWORD, DataTypes.BOOLEAN)
+                .withColumn(COLUMN_LAST_MODIFIED_TIME, DataTypes.TIMESTAMP).withStaticColumn(COLUMN_ENC_VALIDATION_TXT, DataTypes.TEXT);
+        session.execute(createUserTable.build().setExecutionProfileName("jnotes"));
         log.info("Cassandra: User table created: {}", userId);
     }
 
     @Override
     public void insertValidationTextForUser(String userId, String encryptedValidationText) {
         session.execute(SimpleStatement.builder(String.format(ADD_USERSCRET_VALIDATION_ROW, keyspace, userId))
-                        .addPositionalValues(VALIDATION_NOTEBOOK, encryptedValidationText).build());
+                .addPositionalValues(VALIDATION_NOTEBOOK, encryptedValidationText).setExecutionProfileName("jnotes").build());
         log.info("Cassandra: Validation Text added to User table: {}", userId);
     }
 
     @Override
     public String getValidationTextForUser(String userId) {
         String encryptedValidationText = null;
-        try {
-            ResultSet results = session
-                    .execute(SimpleStatement.builder(String.format(GET_ENCRYPTED_VALIDATION_TEXT, keyspace, userId))
-                            .addPositionalValues(VALIDATION_NOTEBOOK).build());
-            Row row = results.one();
+        ResultSet results = session
+                .execute(SimpleStatement.builder(String.format(GET_ENCRYPTED_VALIDATION_TEXT, keyspace, userId))
+                        .addPositionalValues(VALIDATION_NOTEBOOK).build());
+        Row row = results.one();
+        if (row != null) {
             encryptedValidationText = row.getString("encrypted_validation_text");
-        } catch (Exception ex) {
-            log.error("Exception in getEncryptedValidationText (can't do much here) : ", ex);
-            return null;
+        } else {
+            throw new IllegalStateException("No encryption_validation_text was found");
         }
+
         return encryptedValidationText;
     }
 
@@ -120,19 +114,19 @@ public class CassandraNotesRepository implements NotesRepository {
     public void insertNote(String userId, String encryptionKey, NoteEntry noteEntry) {
         String cqlStr = String.format(ADD_NOTE_ENTRY, keyspace, userId);
         session.execute(SimpleStatement.builder(cqlStr)
-                        .addPositionalValues(noteEntry.getNotebook(), noteEntry.getId(), encryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), encryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
-                                encryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC))
-                        .build());
+                .addPositionalValues(noteEntry.getNotebook(), noteEntry.getId(), encryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), encryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
+                        encryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC))
+                .build());
     }
 
     @Override
     public void updateNote(String userId, String encryptionKey, NoteEntry noteEntry) {
         String cqlStr = String.format(EDIT_NOTE_ENTRY, keyspace, userId);
         session.execute(SimpleStatement.builder(cqlStr)
-                        .addPositionalValues(encryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), encryptionUtil.encrypt(encryptionKey, noteEntry.getValue()), encryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(),
-                                noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getId())
-                        .build());
-        
+                .addPositionalValues(encryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), encryptionUtil.encrypt(encryptionKey, noteEntry.getValue()), encryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(),
+                        noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC), noteEntry.getNotebook(), noteEntry.getId())
+                .build());
+
     }
 
     @Override
@@ -151,7 +145,7 @@ public class CassandraNotesRepository implements NotesRepository {
     public void saveNotes(String userId, String encryptionKey, Notes notes) {
         List<BoundStatement> statements = notes.getNoteEntries().stream()
                 .map((noteEntry) -> getBoundStatementForAddNoteEntry(userId, encryptionKey, noteEntry)).collect(Collectors.toList());
-        statements.forEach(statement -> session.execute(statement));        
+        statements.forEach(statement -> session.execute(statement));
     }
 
     private BoundStatement getBoundStatementForAddNoteEntry(String userId, String encryptionKey, NoteEntry noteEntry) {
@@ -161,5 +155,5 @@ public class CassandraNotesRepository implements NotesRepository {
         return preparedAddNoteEntry.bind(noteEntry.getNotebook(), noteEntry.getId(), encryptionUtil.encrypt(encryptionKey, noteEntry.getKey()), encryptionUtil.encrypt(encryptionKey, noteEntry.getValue()),
                 encryptionUtil.encrypt(encryptionKey, noteEntry.getInfo()), noteEntry.isPassword(), noteEntry.getLastModifiedTime().toInstant(ZoneOffset.UTC)).setIdempotent(true);
     }
-    
+
 }

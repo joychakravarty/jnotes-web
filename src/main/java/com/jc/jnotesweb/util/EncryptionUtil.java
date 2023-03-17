@@ -40,8 +40,7 @@ public class EncryptionUtil {
     
     private String encryptionSecret = null;
 
-    @PostConstruct
-    public void readEncyptionSeret(){
+    public EncryptionUtil() {
         this.encryptionSecret = System.getProperty(ENCRYPTION_SECRET);
         if(this.encryptionSecret == null) {
             this.encryptionSecret = System.getenv(ENCRYPTION_SECRET);
@@ -82,10 +81,10 @@ public class EncryptionUtil {
 
     public static void main(String[] args) {
         EncryptionUtil encryptionUtil = new EncryptionUtil();
-        String encryptedVal = encryptionUtil.locallyEncrypt("Testing");
+        String encryptedVal = encryptionUtil.locallyEncrypt("9L2I3EPsO9fcv7tXL2gBPopcCJE8yz2tBvZ3dfIqUqAAskmwODw8oYcrCc1QkPAPk3I4X9uLBSTdJCzC6rXb4w==");
         System.out.println("encryptedVal " + encryptedVal);
 
-        String decryptedVal = encryptionUtil.locallyDecrypt("6ad8866fb76c2b1285a1393ae5f44582879cd23f397afb0b69f78b788c3638ad");
+        String decryptedVal = encryptionUtil.locallyDecrypt("184190791a019bd743c7dfaf7c7fb52e5174cbe178caee4f013f74c2dda2efcdb33aeaec1d444fdf5afc801750c63bb02abc83d11a40e059e987d15cae1134e3e62dc83885d8ca600d61e92300821a8c1ac061585dafddb1032ca6da3a4e054de94fd49d4448eda2294a0391a9fb0599");
         System.out.println("decryptedVal " + decryptedVal);
         
     }
