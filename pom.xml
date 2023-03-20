@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.jc</groupId>
     <artifactId>jnotes-web</artifactId>
-    <version>01.01</version>
+    <version>01.02</version>
     <name>JNotesWeb</name>
     <description>Web counterpart for JNotes desktop application</description>
 
@@ -19,6 +19,10 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <jib-maven-plugin.version>3.3.1</jib-maven-plugin.version>
+        <docker.image.prefix>piresgunnercontainerregistry.azurecr.io</docker.image.prefix>
+        <java.version>11</java.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -115,6 +119,7 @@
                     <execution>
                         <goals>
                             <goal>build-info</goal>
+                            <goal>repackage</goal>
                         </goals>
                         <configuration>
                             <additionalProperties>
@@ -122,11 +127,35 @@
                                 <encoding.reporting>${project.reporting.outputEncoding}</encoding.reporting>
                                 <java.source>${maven.compiler.source}</java.source>
                                 <java.target>${maven.compiler.target}</java.target>
+                                <mainClass>com.jc.jnotesweb.JNotesWebApplication</mainClass>
                             </additionalProperties>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+            <!-- <plugin>
+                <artifactId>jib-maven-plugin</artifactId>
+                <groupId>com.google.cloud.tools</groupId>
+                <version>${jib-maven-plugin.version}</version>
+                <configuration>
+                    <from>
+                        <image>mcr.microsoft.com/java/jdk:11-zulu-alpine</image>
+                    </from>
+                    <to>
+                        <image>${docker.image.prefix}/${project.artifactId}</image>
+                    </to>
+                    <container>
+                        <mainClass>com.jc.jnotesweb.JNotesWebApplication</mainClass>
+                        <ports>
+                            <port>80</port>
+                        </ports>
+                        <environment>
+                            <application.title>${project.name}</application.title>
+                            <application.version>${project.version}</application.version>
+                        </environment>
+                    </container>
+                </configuration>
+            </plugin> -->
         </plugins>
     </build>
 

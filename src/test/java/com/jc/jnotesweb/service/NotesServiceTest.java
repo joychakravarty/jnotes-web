@@ -48,7 +48,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * 
+ * This even works locally, uncomment to run.
+ * mvn clean install -Dspring-boot.run.profiles=production -DENCRYPTION_SECRET=something_only_joy_knows
+ *
  * @author Joy C
  *
  */
@@ -58,7 +60,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @Slf4j
 public class NotesServiceTest {
 
-    private static final String TEST_USER_ID = "jnotes_testuser";
+    /*private static final String TEST_USER_ID = "jnotes_testuser";
     private static final String TEST_USER_SECRET = "jnotes_testsecret";
     
     @Autowired
@@ -196,6 +198,6 @@ public class NotesServiceTest {
         service.deleteNotes(TEST_USER_ID, notes);
         retNotes = service.getUserNotesForNotebook(TEST_USER_ID, TEST_USER_SECRET, testNotebook1);
         assertEquals(0, retNotes.getNoteEntries().size());
-    }
+    }*/
 
 }
