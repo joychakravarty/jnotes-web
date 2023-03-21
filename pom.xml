@@ -133,7 +133,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- <plugin>
+            <plugin>
                 <artifactId>jib-maven-plugin</artifactId>
                 <groupId>com.google.cloud.tools</groupId>
                 <version>${jib-maven-plugin.version}</version>
@@ -146,16 +146,13 @@
                     </to>
                     <container>
                         <mainClass>com.jc.jnotesweb.JNotesWebApplication</mainClass>
-                        <ports>
-                            <port>80</port>
-                        </ports>
                         <environment>
                             <application.title>${project.name}</application.title>
                             <application.version>${project.version}</application.version>
                         </environment>
                     </container>
                 </configuration>
-            </plugin> -->
+            </plugin>
         </plugins>
     </build>
 

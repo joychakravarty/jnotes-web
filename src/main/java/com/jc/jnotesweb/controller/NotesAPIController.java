@@ -41,11 +41,11 @@ public class NotesAPIController {
     @Qualifier("dbProperties")
     private String dbProperties;
 
-    @RequestMapping("/")
-    String index(Map<String, Object> model) {
+    @RequestMapping("/notes")
+    String notes(Map<String, Object> model) {
         log.info("dbProperties >> " + dbProperties);
         model.put("dbProperties", dbProperties);
-        return "index";
+        return "notes";
     }
 
     @GetMapping("/getUserNotes")
